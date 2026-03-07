@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Layout from './components/Layout.jsx'
-import PatientList from './pages/PatientList.jsx'
-import PatientAdd from './pages/PatientAdd.jsx'
-import PatientEdit from './pages/PatientEdit.jsx'
+import Layout from './components/Layout'
+import PatientList from './pages/PatientList'
+import PatientAdd from './pages/PatientAdd'
+import PatientEdit from './pages/PatientEdit'
 
 export default function App() {
   return (

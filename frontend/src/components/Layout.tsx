@@ -22,10 +22,20 @@ export default function Layout() {
       <div className="max-w-5xl mx-auto w-full px-4 py-2 text-sm text-gray-500">
         {pathname === '/patients' && 'Patients'}
         {pathname === '/patients/new' && (
-          <><Link to="/patients" className="text-indigo-600 hover:underline">Patients</Link> / Add</>
+          <>
+            <Link to="/patients" className="text-indigo-600 hover:underline">
+              Patients
+            </Link>{' '}
+            / Add
+          </>
         )}
         {pathname.includes('/edit') && (
-          <><Link to="/patients" className="text-indigo-600 hover:underline">Patients</Link> / Edit</>
+          <>
+            <Link to="/patients" className="text-indigo-600 hover:underline">
+              Patients
+            </Link>{' '}
+            / Edit
+          </>
         )}
       </div>
 

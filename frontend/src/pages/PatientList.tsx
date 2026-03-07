@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getPatients } from '../api/patientApi.js'
+import { getPatients } from '../api/patientApi'
+import type { Patient } from '../types/patient'
 
 export default function PatientList() {
-  const [patients, setPatients] = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState(null)
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     getPatients()
-      .then(res => setPatients(res.data))
+      .then((res) => setPatients(res.data))
       .catch(() => setError('Failed to load patients. Is the backend running?'))
       .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <p className="text-gray-500 mt-6">Loading patients…</p>
-  if (error)   return <p className="text-red-500 mt-6">{error}</p>
+  if (error) return <p className="text-red-500 mt-6">{error}</p>
 
   return (
     <div>
@@ -29,7 +30,10 @@ export default function PatientList() {
       {patients.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p className="text-lg">No patients yet.</p>
-          <Link to="/patients/new" className="text-indigo-600 hover:underline text-sm mt-2 inline-block">
+          <Link
+            to="/patients/new"
+            className="text-indigo-600 hover:underline text-sm mt-2 inline-block"
+          >
             Add the first patient →
           </Link>
         </div>
@@ -38,26 +42,32 @@ export default function PatientList() {
           <table className="w-full text-sm text-left">
             <thead className="bg-indigo-50 text-indigo-800 uppercase text-xs tracking-wide">
               <tr>
-                {['Last Name', 'First Name', 'Date of Birth', 'Gender', 'Address', 'Phone', ''].map(h => (
-                  <th key={h} className="px-4 py-3 font-semibold">{h}</th>
-                ))}
+                {['Last Name', 'First Name', 'Date of Birth', 'Gender', 'Address', 'Phone', ''].map(
+                  (h) => (
+                    <th key={h} className="px-4 py-3 font-semibold">
+                      {h}
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {patients.map(p => (
+              {patients.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50 transition">
                   <td className="px-4 py-3 font-medium text-gray-900">{p.lastName}</td>
                   <td className="px-4 py-3 text-gray-700">{p.firstName}</td>
                   <td className="px-4 py-3 text-gray-700">{p.dateOfBirth}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      p.gender === 'M' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
-                    }`}>
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        p.gender === 'M' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
+                      }`}
+                    >
                       {p.gender === 'M' ? 'Male' : 'Female'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{p.address || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{p.phone || '—'}</td>
+                  <td className="px-4 py-3 text-gray-600">{p.address ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-600">{p.phone ?? '—'}</td>
                   <td className="px-4 py-3">
                     <Link
                       to={`/patients/${p.id}/edit`}
