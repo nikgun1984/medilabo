@@ -1,0 +1,88 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: medilabo-postgres
+    environment:
+      POSTGRES_DB: demographics_db
+      POSTGRES_USER: medilabo
+      POSTGRES_PASSWORD: medilabo123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - medilabo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medilabo -d demographics_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Demographics Microservice
+  demographics:
+    build:
+      context: ./demographics
+      dockerfile: Dockerfile
+    container_name: medilabo-demographics
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/demographics_db
+      SPRING_DATASOURCE_USERNAME: medilabo
+      SPRING_DATASOURCE_PASSWORD: medilabo123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - medilabo-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/api/demographics/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # API Gateway
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: medilabo-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - demographics
+      - frontend
+    networks:
+      - medilabo-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Microservice
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: medilabo-frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - medilabo-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  medilabo-network:
+    driver: bridge
+
+volumes:
+  postgres-data:

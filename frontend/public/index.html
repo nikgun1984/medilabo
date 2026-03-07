@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medilabo - Microservices Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .service-card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .service-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .status.checking {
+            background-color: #ffeaa7;
+            color: #fdcb6e;
+        }
+
+        .status.up {
+            background-color: #55efc4;
+            color: #00b894;
+        }
+
+        .status.down {
+            background-color: #ff7675;
+            color: #d63031;
+        }
+
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            transition: opacity 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+        }
+
+        .info-box {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-box li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            color: #666;
+        }
+
+        .info-box li:last-child {
+            border-bottom: none;
+        }
+
+        .info-box li strong {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Medilabo</h1>
+            <p class="subtitle">Microservices Architecture Dashboard</p>
+        </header>
+
+        <div class="services-grid">
+            <div class="service-card">
+                <h2>🌐 API Gateway</h2>
+                <div class="status checking" id="gateway-status">Checking...</div>
+                <p>Central entry point for all microservices. Routes requests to appropriate services and handles cross-cutting concerns.</p>
+                <p><strong>Port:</strong> 8080</p>
+                <button class="button" onclick="checkService('/proxy/health/gateway', 'gateway')">Check Health</button>
+            </div>
+
+            <div class="service-card">
+                <h2>👥 Demographics Service</h2>
+                <div class="status checking" id="demographics-status">Checking...</div>
+                <p>Manages patient demographic information including personal details, contact information, and medical history.</p>
+                <p><strong>Port:</strong> 8081</p>
+                <button class="button" onclick="checkService('/proxy/health/demographics', 'demographics')">Check Health</button>
+            </div>
+
+            <div class="service-card">
+                <h2>💻 Frontend Service</h2>
+                <div class="status up" id="frontend-status">UP</div>
+                <p>User interface layer providing a modern web interface for interacting with all backend services.</p>
+                <p><strong>Port:</strong> 3000</p>
+                <p><em>You're viewing it now!</em></p>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>📋 Architecture Information</h3>
+            <ul>
+                <li><strong>Architecture Pattern:</strong> Microservices</li>
+                <li><strong>API Gateway:</strong> Spring Cloud Gateway</li>
+                <li><strong>Backend Framework:</strong> Spring Boot (Demographics: 4.0.2 · Gateway: 3.4.5)</li>
+                <li><strong>Frontend Framework:</strong> Express.js</li>
+                <li><strong>Database:</strong> PostgreSQL</li>
+                <li><strong>Containerization:</strong> Docker</li>
+                <li><strong>Orchestration:</strong> Docker Compose</li>
+                <li><strong>Java Version:</strong> 21</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Use same-origin server-side proxy endpoints — no CORS issues
+        async function checkService(proxyPath, serviceName) {
+            const statusElement = document.getElementById(`${serviceName}-status`);
+            statusElement.textContent = 'Checking...';
+            statusElement.className = 'status checking';
+
+            try {
+                const response = await fetch(proxyPath);
+                if (response.ok) {
+                    statusElement.textContent = 'UP';
+                    statusElement.className = 'status up';
+                } else {
+                    statusElement.textContent = 'DOWN';
+                    statusElement.className = 'status down';
+                }
+            } catch (error) {
+                statusElement.textContent = 'DOWN';
+                statusElement.className = 'status down';
+            }
+        }
+
+        // Check all services on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                checkService('/proxy/health/gateway',      'gateway');
+                checkService('/proxy/health/demographics', 'demographics');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
