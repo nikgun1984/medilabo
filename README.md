@@ -36,7 +36,7 @@ This project consists of three microservices orchestrated with Docker Compose:
 ### 1. API Gateway (Port 8080)
 - **Technology**: Spring Cloud Gateway
 - **Purpose**: Routes all requests to appropriate microservices
-- **Features**: 
+- **Features**:
   - Request routing
   - CORS configuration
   - Load balancing ready
@@ -52,20 +52,23 @@ This project consists of three microservices orchestrated with Docker Compose:
   - Health check endpoint
 
 ### 3. Frontend Service (Port 3000)
-- **Technology**: Node.js + Express
+- **Technology**: React 18 + Vite + TypeScript
 - **Purpose**: Serves the web interface
 - **Features**:
-  - Dashboard UI
-  - Service health monitoring
-  - Static file serving
+  - Patient management UI (list, add, edit)
+  - React Router for client-side navigation
+  - React Hook Form for form handling
+  - Axios for API communication
+  - Tailwind CSS for styling
+  - Served via Nginx in production (Docker)
 
 ### 4. PostgreSQL Database (Port 5432)
 - **Technology**: PostgreSQL 16
 - **Purpose**: Data persistence for demographics service
 - **Credentials**:
-  - Database: demographics_db
-  - User: medilabo
-  - Password: medilabo123
+  - Database: `demographics_db`
+  - User: `medilabo`
+  - Password: `medilabo123`
 
 ## Prerequisites
 
@@ -87,12 +90,12 @@ This will:
 - Build Docker images for all services
 - Start PostgreSQL database
 - Start Demographics service
-- Start Frontend service
+- Start Frontend service (Nginx)
 - Start API Gateway
 
 ### 2. Access the Application
 
-- **Frontend Dashboard**: http://localhost:8080
+- **Frontend Dashboard**: http://localhost:3000
 - **API Gateway**: http://localhost:8080
 - **Demographics API**: http://localhost:8080/api/demographics/health
 - **Gateway Health**: http://localhost:8080/actuator/health
@@ -129,8 +132,41 @@ cd gateway
 ```bash
 cd frontend
 npm install
-npm start
+npm run dev
 ```
+
+### Frontend Scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| Dev server | `npm run dev` | Start Vite dev server with HMR |
+| Build | `npm run build` | Type-check + production build |
+| Lint | `npm run lint` | Lint with Biome |
+| Format | `npm run format` | Format with Biome |
+| Check | `npm run check` | Lint + format + fix with Biome |
+| Preview | `npm run preview` | Preview production build |
+
+## Code Quality
+
+The frontend uses **[Biome](https://biomejs.dev/)** for linting and formatting, replacing ESLint and Prettier with a single fast tool.
+
+```bash
+cd frontend
+
+# Lint all files
+npm run lint
+
+# Format all files
+npm run format
+
+# Run both lint + format and auto-fix
+npm run check
+```
+
+Biome is configured in `frontend/biome.json` with:
+- Single quotes, no semicolons, 2-space indent, 100-char line width
+- Recommended rules for correctness, performance, security, and style
+- Automatic import organisation
 
 ## Docker Commands
 
@@ -170,8 +206,9 @@ docker-compose up --build demographics
 - `GET http://localhost:8080/actuator/gateway/routes` - View all routes
 
 ### Frontend
-- `GET http://localhost:8080/` - Main dashboard
-- `GET http://localhost:3000/health` - Frontend health (direct)
+- `GET http://localhost:3000/` - Patient list
+- `GET http://localhost:3000/patients/add` - Add patient
+- `GET http://localhost:3000/patients/:id/edit` - Edit patient
 
 ## Environment Variables
 
@@ -197,10 +234,10 @@ All services communicate through the `medilabo-network` Docker bridge network:
 ## Health Checks
 
 All services include health checks:
-- **PostgreSQL**: pg_isready command
-- **Demographics**: HTTP check on /api/demographics/health
-- **Gateway**: HTTP check on /actuator/health
-- **Frontend**: HTTP check on /health
+- **PostgreSQL**: `pg_isready` command
+- **Demographics**: HTTP check on `/api/demographics/health`
+- **Gateway**: HTTP check on `/actuator/health`
+- **Frontend**: HTTP check on `/health` (Nginx)
 
 ## Troubleshooting
 
@@ -238,36 +275,51 @@ medilabo/
 │   ├── pom.xml
 │   ├── Dockerfile
 │   └── .dockerignore
-├── frontend/             # Frontend microservice
+├── frontend/              # Frontend microservice
 │   ├── src/
-│   ├── public/
+│   │   ├── api/           # Axios API clients
+│   │   ├── components/    # Shared React components
+│   │   ├── pages/         # Route-level page components
+│   │   └── types/         # TypeScript type definitions
+│   ├── biome.json         # Biome linter/formatter config
 │   ├── package.json
+│   ├── tsconfig.json
+│   ├── vite.config.ts
+│   ├── nginx.conf         # Nginx config for production
 │   ├── Dockerfile
 │   └── .dockerignore
-├── docker-compose.yml    # Orchestration configuration
-└── README.md            # This file
+├── scripts/               # SQL seed scripts
+├── docker-compose.yml     # Orchestration configuration
+└── README.md              # This file
 ```
 
 ## Next Steps
 
-1. **Add More Endpoints**: Expand the Demographics service with CRUD operations
-2. **Add Authentication**: Implement JWT-based authentication in the gateway
-3. **Add Service Discovery**: Integrate Eureka for dynamic service discovery
-4. **Add Monitoring**: Add Prometheus and Grafana for monitoring
-5. **Add Logging**: Centralize logs with ELK stack
-6. **Add CI/CD**: Set up automated builds and deployments
-7. **Add More Microservices**: Create additional services for notes, assessments, etc.
+1. **Add Authentication**: Implement JWT-based authentication in the gateway
+2. **Add Service Discovery**: Integrate Eureka for dynamic service discovery
+3. **Add Monitoring**: Add Prometheus and Grafana for monitoring
+4. **Add Logging**: Centralize logs with ELK stack
+5. **Add CI/CD**: Set up automated builds and deployments
+6. **Add More Microservices**: Create additional services for notes and assessments
+7. **Add Tests**: Expand frontend test coverage with Vitest
 
 ## Technology Stack
 
-- **Backend Framework**: Spring Boot 4.0.2
-- **Gateway**: Spring Cloud Gateway 2024.0.0
-- **Database**: PostgreSQL 16
-- **Frontend**: Node.js 18 + Express
-- **Containerization**: Docker
-- **Orchestration**: Docker Compose
-- **Java Version**: 21
-- **Build Tool**: Maven
+| Layer | Technology |
+|-------|-----------|
+| Backend Framework | Spring Boot 4.0.2 |
+| API Gateway | Spring Cloud Gateway 2024.0.0 |
+| Database | PostgreSQL 16 |
+| Frontend | React 18 + Vite + TypeScript |
+| Styling | Tailwind CSS |
+| Forms | React Hook Form |
+| HTTP Client | Axios |
+| Linter / Formatter | Biome 1.9.4 |
+| Production Server | Nginx |
+| Containerisation | Docker |
+| Orchestration | Docker Compose |
+| Java Version | 21 |
+| Build Tool | Maven |
 
 ## License
 
