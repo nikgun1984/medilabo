@@ -1,5 +1,7 @@
 # Medilabo Microservices Architecture
 
+<img src="https://raw.githubusercontent.com/nikgun1984/medilabo/main/app_ui.png" alt="Medilabo UI" width="780" />
+
 This project consists of three microservices orchestrated with Docker Compose:
 
 ## Architecture Overview
