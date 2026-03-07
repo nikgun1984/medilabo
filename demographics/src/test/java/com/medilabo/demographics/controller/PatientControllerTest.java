@@ -1,7 +1,5 @@
 package com.medilabo.demographics.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.medilabo.demographics.dto.PatientDTO;
 import com.medilabo.demographics.dto.PatientRequest;
 import com.medilabo.demographics.exception.GlobalExceptionHandler;
@@ -10,10 +8,11 @@ import com.medilabo.demographics.service.PatientService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -42,8 +41,6 @@ class PatientControllerTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-
         patientDTO = PatientDTO.builder()
                 .id(1L)
                 .lastName("TestNone")
