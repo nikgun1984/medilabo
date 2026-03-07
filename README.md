@@ -112,6 +112,18 @@ docker-compose down
 docker-compose down -v
 ```
 
+## Database Seeding
+
+After starting the stack for the first time, seed the database with sample patients:
+
+```bash
+docker exec -i medilabo-postgres psql -U medilabo -d demographics_db < scripts/insert_patients.sql
+```
+
+This inserts 4 test patients (TestNone, TestBorderline, TestInDanger, TestEarlyOnset) into the `patients` table. Without this step the patient list will appear empty even though the service is healthy.
+
+> **Note**: The seed script is idempotent — it uses `CREATE TABLE IF NOT EXISTS`, but the `INSERT` statements will duplicate rows if run more than once. Re-run only on a fresh database or after `docker-compose down -v`.
+
 ## Development
 
 ### Run Individual Services Locally
