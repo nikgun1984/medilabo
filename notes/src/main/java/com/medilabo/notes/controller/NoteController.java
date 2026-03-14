@@ -35,21 +35,28 @@ public class NoteController {
     @GetMapping("/patient/{patId}")
     public ResponseEntity<List<NoteDTO>> getNotesByPatient(@PathVariable Long patId) {
         log.info("GET /api/notes/patient/{}", patId);
-        return ResponseEntity.ok(noteService.getNotesByPatient(patId));
+        List<NoteDTO> notes = noteService.getNotesByPatient(patId);
+        log.info("GET /api/notes/patient/{} — returning {} note(s)", patId, notes.size());
+        return ResponseEntity.ok(notes);
     }
 
     /** Get one note by its id */
     @GetMapping("/{id}")
     public ResponseEntity<NoteDTO> getNoteById(@PathVariable String id) {
         log.info("GET /api/notes/{}", id);
-        return ResponseEntity.ok(noteService.getNoteById(id));
+        NoteDTO note = noteService.getNoteById(id);
+        log.debug("GET /api/notes/{} — patId={}", id, note.getPatId());
+        return ResponseEntity.ok(note);
     }
 
     /** Add a new note */
     @PostMapping
     public ResponseEntity<NoteDTO> createNote(@Valid @RequestBody NoteRequest request) {
-        log.info("POST /api/notes — patId={}", request.getPatId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(noteService.createNote(request));
+        log.info("POST /api/notes — patId={}, patient={}, noteLength={}",
+                request.getPatId(), request.getPatient(), request.getNote().length());
+        NoteDTO created = noteService.createNote(request);
+        log.info("POST /api/notes — created id={}", created.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /** Update an existing note */
@@ -57,8 +64,10 @@ public class NoteController {
     public ResponseEntity<NoteDTO> updateNote(
             @PathVariable String id,
             @Valid @RequestBody NoteRequest request) {
-        log.info("PUT /api/notes/{}", id);
-        return ResponseEntity.ok(noteService.updateNote(id, request));
+        log.info("PUT /api/notes/{} — patId={}, noteLength={}", id, request.getPatId(), request.getNote().length());
+        NoteDTO updated = noteService.updateNote(id, request);
+        log.info("PUT /api/notes/{} — updated successfully", id);
+        return ResponseEntity.ok(updated);
     }
 
     /** Delete a note */
@@ -66,6 +75,7 @@ public class NoteController {
     public ResponseEntity<Void> deleteNote(@PathVariable String id) {
         log.info("DELETE /api/notes/{}", id);
         noteService.deleteNote(id);
+        log.info("DELETE /api/notes/{} — deleted successfully", id);
         return ResponseEntity.noContent().build();
     }
 }
