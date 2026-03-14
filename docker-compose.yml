@@ -73,7 +73,6 @@ services:
       - "8082:8082"
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://medilabo:medilabo123@mongodb:27017/notes_db?authSource=admin
-      SPRING_DATA_MONGODB_DATABASE: notes_db
     depends_on:
       mongodb:
         condition: service_healthy
