@@ -69,12 +69,21 @@ export default function PatientList() {
                   <td className="px-4 py-3 text-gray-600">{p.address ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{p.phone ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <Link
-                      to={`/patients/${p.id}/edit`}
-                      className="text-indigo-600 hover:underline font-medium"
-                    >
-                      Edit
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        to={`/patients/${p.id}/view`}
+                        className="text-indigo-600 hover:underline font-medium"
+                      >
+                        View
+                      </Link>
+                      <span className="text-gray-300">|</span>
+                      <Link
+                        to={`/patients/${p.id}/edit`}
+                        className="text-gray-500 hover:underline font-medium"
+                      >
+                        Edit
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}

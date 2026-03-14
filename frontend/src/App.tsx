@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import PatientList from './pages/PatientList'
 import PatientAdd from './pages/PatientAdd'
 import PatientEdit from './pages/PatientEdit'
+import PatientView from './pages/PatientView'
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
           <Route index element={<Navigate to="/patients" replace />} />
           <Route path="patients" element={<PatientList />} />
           <Route path="patients/new" element={<PatientAdd />} />
+          <Route path="patients/:id/view" element={<PatientView />} />
           <Route path="patients/:id/edit" element={<PatientEdit />} />
         </Route>
       </Routes>

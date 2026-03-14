@@ -29,6 +29,14 @@ export default function Layout() {
             / Add
           </>
         )}
+        {pathname.includes('/view') && (
+          <>
+            <Link to="/patients" className="text-indigo-600 hover:underline">
+              Patients
+            </Link>{' '}
+            / View
+          </>
+        )}
         {pathname.includes('/edit') && (
           <>
             <Link to="/patients" className="text-indigo-600 hover:underline">
