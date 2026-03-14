@@ -19,6 +19,26 @@ services:
       timeout: 5s
       retries: 5
 
+  # MongoDB Database
+  mongodb:
+    image: mongo:7-jammy
+    container_name: medilabo-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: medilabo
+      MONGO_INITDB_ROOT_PASSWORD: medilabo123
+      MONGO_INITDB_DATABASE: notes_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - medilabo-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Demographics Microservice
   demographics:
     build:
@@ -43,6 +63,29 @@ services:
       retries: 3
       start_period: 40s
 
+  # Notes Microservice
+  notes:
+    build:
+      context: ./notes
+      dockerfile: Dockerfile
+    container_name: medilabo-notes
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://medilabo:medilabo123@mongodb:27017/notes_db?authSource=admin
+      SPRING_DATA_MONGODB_DATABASE: notes_db
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - medilabo-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # API Gateway
   gateway:
     build:
@@ -53,6 +96,7 @@ services:
       - "8080:8080"
     depends_on:
       - demographics
+      - notes
       - frontend
     networks:
       - medilabo-network
@@ -86,3 +130,4 @@ networks:
 
 volumes:
   postgres-data:
+  mongodb-data:

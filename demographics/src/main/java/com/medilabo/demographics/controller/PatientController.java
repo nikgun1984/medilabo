@@ -16,6 +16,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/demographics/patients")
 @RequiredArgsConstructor
+/**
+ * Controller for managing patients. Provides endpoints to list, retrieve, create, and update patient records.
+ */
 public class PatientController {
 
     private final PatientService patientService;
