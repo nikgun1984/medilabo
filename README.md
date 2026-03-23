@@ -9,36 +9,42 @@ This project consists of three microservices orchestrated with Docker Compose:
 ```
 ┌─────────────┐
 │   Client    │
+│  (Browser)  │
 └──────┬──────┘
-       │
+       │  JWT Bearer Token
        ▼
 ┌─────────────────────┐
 │   API Gateway       │ (Port 8080)
 │ Spring Cloud Gateway│
+│  + JWT Auth Filter  │
+│  + /auth/login      │
 └──────┬──────────────┘
-       │
-       ├──────────────────────┐
-       │                      │
-       ▼                      ▼
+       │  X-Auth-User header
+       ├──────────────────────┬───────────────────┐
+       │                      │                   │
+       ▼                      ▼                   ▼
+┌─────────────┐      ┌──────────────┐    ┌──────────────┐
+│Demographics │      │    Notes     │    │  Frontend    │
+│  Service    │      │   Service    │    │   Service    │
+│ (Port 8081) │      │ (Port 8082)  │    │ (Port 3000)  │
+└──────┬──────┘      └──────┬───────┘    └──────────────┘
+       │                    │
+       ▼                    ▼
 ┌─────────────┐      ┌──────────────┐
-│Demographics │      │  Frontend    │
-│  Service    │      │   Service    │
-│ (Port 8081) │      │ (Port 3000)  │
-└──────┬──────┘      └──────────────┘
-       │
-       ▼
-┌─────────────┐
-│ PostgreSQL  │
-│ (Port 5432) │
-└─────────────┘
+│ PostgreSQL  │      │   MongoDB    │
+│ (Port 5432) │      │ (Port 27017) │
+└─────────────┘      └──────────────┘
 ```
 
 ## Services
 
 ### 1. API Gateway (Port 8080)
-- **Technology**: Spring Cloud Gateway
-- **Purpose**: Routes all requests to appropriate microservices
+- **Technology**: Spring Cloud Gateway + Spring Security
+- **Purpose**: Routes all requests to appropriate microservices and handles JWT authentication
 - **Features**:
+  - JWT token issuance (`POST /auth/login`)
+  - JWT validation on all `/api/**` requests
+  - Forwards authenticated user via `X-Auth-User` header to downstream services
   - Request routing
   - CORS configuration
   - Load balancing ready
@@ -97,9 +103,11 @@ This will:
 
 ### 2. Access the Application
 
-- **Frontend Dashboard**: http://localhost:3000
+- **Frontend Dashboard**: http://localhost:3000 (redirects to login page)
+- **Login**: Use `doctor` / `doctor123` or `admin` / `admin123`
 - **API Gateway**: http://localhost:8080
-- **Demographics API**: http://localhost:8080/api/demographics/health
+- **Auth Endpoint**: `POST http://localhost:8080/auth/login`
+- **Demographics API**: http://localhost:8080/api/demographics/health (requires JWT)
 - **Gateway Health**: http://localhost:8080/actuator/health
 
 ### 3. Stop All Services
@@ -159,6 +167,50 @@ npm run dev
 | Format | `npm run format` | Format with Biome |
 | Check | `npm run check` | Lint + format + fix with Biome |
 | Preview | `npm run preview` | Preview production build |
+
+## JWT Authentication
+
+The application uses **JWT (JSON Web Token)** authentication. All API requests must include a valid JWT token.
+
+### How It Works
+
+1. **Login**: The user submits credentials to `POST /auth/login` on the Gateway
+2. **Token Issued**: The Gateway validates credentials and returns a signed JWT
+3. **Authenticated Requests**: The frontend stores the JWT in `localStorage` and attaches it as an `Authorization: Bearer <token>` header on every API request
+4. **Gateway Validation**: The Gateway's `JwtAuthenticationFilter` validates the token on all `/api/**` requests
+5. **User Forwarding**: On valid tokens, the Gateway forwards the username to downstream services via the `X-Auth-User` header
+6. **401 Handling**: If the token is missing/expired/invalid, the Gateway returns a `401 Unauthorized` JSON response, and the frontend redirects to the login page
+
+### Demo Credentials
+
+| Username | Password | Role |
+|----------|----------|------|
+| `doctor` | `doctor123` | Physician |
+| `admin` | `admin123` | Administrator |
+
+### Auth API Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|:------------:|
+| `POST` | `/auth/login` | Authenticate and receive JWT | ❌ |
+| `GET` | `/actuator/health` | Gateway health check | ❌ |
+| `*` | `/api/**` | All API endpoints | ✅ |
+
+### JWT Configuration
+
+| Property | Default | Environment Variable |
+|----------|---------|---------------------|
+| Secret key | Base64-encoded HMAC key | `JWT_SECRET` |
+| Token TTL | 24 hours (86400000 ms) | `JWT_EXPIRATION_MS` |
+
+### Request Flow
+
+```
+Browser → nginx (port 3000) → Gateway (port 8080) → demographics/notes
+                                   │
+                              JWT validated
+                              X-Auth-User header added
+```
 
 ## Code Quality
 
@@ -284,16 +336,25 @@ medilabo/
 │   ├── pom.xml
 │   ├── Dockerfile
 │   └── .dockerignore
-├── gateway/               # API Gateway
+├── notes/                 # Notes microservice (MongoDB)
 │   ├── src/
+│   ├── pom.xml
+│   ├── Dockerfile
+│   └── .dockerignore
+├── gateway/               # API Gateway + JWT Authentication
+│   ├── src/
+│   │   └── main/java/com/medilabo/gateway/
+│   │       ├── controller/    # AuthController (login endpoint)
+│   │       └── security/      # JWT filter, config, util
 │   ├── pom.xml
 │   ├── Dockerfile
 │   └── .dockerignore
 ├── frontend/              # Frontend microservice
 │   ├── src/
-│   │   ├── api/           # Axios API clients
-│   │   ├── components/    # Shared React components
-│   │   ├── pages/         # Route-level page components
+│   │   ├── api/           # Axios API clients (with JWT interceptors)
+│   │   ├── components/    # Shared React components (Layout, ProtectedRoute)
+│   │   ├── context/       # AuthContext (JWT state management)
+│   │   ├── pages/         # Route-level page components (incl. LoginPage)
 │   │   └── types/         # TypeScript type definitions
 │   ├── biome.json         # Biome linter/formatter config
 │   ├── package.json
@@ -302,19 +363,19 @@ medilabo/
 │   ├── nginx.conf         # Nginx config for production
 │   ├── Dockerfile
 │   └── .dockerignore
-├── scripts/               # SQL seed scripts
+├── scripts/               # SQL/JS seed scripts
 ├── docker-compose.yml     # Orchestration configuration
 └── README.md              # This file
 ```
 
 ## Next Steps
 
-1. **Add Authentication**: Implement JWT-based authentication in the gateway
+1. ~~**Add Authentication**: Implement JWT-based authentication in the gateway~~ ✅
 2. **Add Service Discovery**: Integrate Eureka for dynamic service discovery
 3. **Add Monitoring**: Add Prometheus and Grafana for monitoring
 4. **Add Logging**: Centralize logs with ELK stack
 5. **Add CI/CD**: Set up automated builds and deployments
-6. **Add More Microservices**: Create additional services for notes and assessments
+6. **Add Risk Assessment Service**: Create the diabetes risk assessment microservice
 7. **Add Tests**: Expand frontend test coverage with Vitest
 
 ## Technology Stack
@@ -322,8 +383,10 @@ medilabo/
 | Layer | Technology |
 |-------|-----------|
 | Backend Framework | Spring Boot 4.0.2 |
-| API Gateway | Spring Cloud Gateway 2024.0.0 |
-| Database | PostgreSQL 16 |
+| API Gateway | Spring Cloud Gateway 2024.0.1 |
+| Authentication | JWT (jjwt 0.12.6) + Spring Security |
+| Relational Database | PostgreSQL 16 |
+| Document Database | MongoDB 7 |
 | Frontend | React 18 + Vite + TypeScript |
 | Styling | Tailwind CSS |
 | Forms | React Hook Form |
