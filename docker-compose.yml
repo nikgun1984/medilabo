@@ -85,6 +85,29 @@ services:
       retries: 3
       start_period: 40s
 
+  # Assessment Microservice (no database — queries demographics + notes)
+  assessment:
+    build:
+      context: ./assessment
+      dockerfile: Dockerfile
+    container_name: medilabo-assessment
+    ports:
+      - "8083:8083"
+    environment:
+      DEMOGRAPHICS_URL: http://demographics:8081
+      NOTES_URL: http://notes:8082
+    depends_on:
+      - demographics
+      - notes
+    networks:
+      - medilabo-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # API Gateway
   gateway:
     build:
@@ -98,6 +121,7 @@ services:
     depends_on:
       - demographics
       - notes
+      - assessment
       - frontend
     networks:
       - medilabo-network

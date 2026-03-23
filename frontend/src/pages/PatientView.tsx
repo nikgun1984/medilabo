@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getPatient } from '../api/patientApi'
 import { createNote, getNotesByPatient } from '../api/noteApi'
+import { getAssessment } from '../api/assessmentApi'
 import type { Patient } from '../types/patient'
 import type { Note } from '../types/note'
+import type { Assessment } from '../types/assessment'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -32,6 +34,9 @@ export default function PatientView() {
   const [loadingNotes, setLoadingNotes] = useState(true)
   const [patientError, setPatientError] = useState<string | null>(null)
 
+  const [assessment, setAssessment] = useState<Assessment | null>(null)
+  const [loadingAssessment, setLoadingAssessment] = useState(true)
+
   const [noteText, setNoteText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -53,6 +58,20 @@ export default function PatientView() {
       .then((res) => setNotes(res.data))
       .catch(() => setNotes([]))
       .finally(() => setLoadingNotes(false))
+  }, [id])
+
+  // Load risk assessment
+  const fetchAssessment = () => {
+    if (!id) return
+    setLoadingAssessment(true)
+    getAssessment(id)
+      .then((res) => setAssessment(res.data))
+      .catch(() => setAssessment(null))
+      .finally(() => setLoadingAssessment(false))
+  }
+
+  useEffect(() => {
+    fetchAssessment()
   }, [id])
 
   // Auto-resize textarea as user types
@@ -78,6 +97,8 @@ export default function PatientView() {
       setNotes((prev) => [res.data, ...prev])
       setNoteText('')
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
+      // Refresh risk assessment since the new note may change trigger count
+      fetchAssessment()
     } catch {
       setSubmitError('Failed to save note. Please try again.')
     } finally {
@@ -139,6 +160,50 @@ export default function PatientView() {
           >
             ← Back to list
           </Link>
+        </div>
+      </div>
+
+      {/* ── Diabetes Risk Assessment ──────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-800">Diabetes Risk Assessment</h2>
+          {!loadingAssessment && assessment && <RiskBadge level={assessment.riskLevel} />}
+        </div>
+        <div className="px-6 py-5">
+          {loadingAssessment ? (
+            <div className="animate-pulse space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-48" />
+              <div className="h-3 bg-gray-100 rounded w-64" />
+            </div>
+          ) : !assessment ? (
+            <p className="text-sm text-gray-400">Unable to compute risk assessment.</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <InfoField label="Risk Level" value={formatRiskLevel(assessment.riskLevel)} />
+                <InfoField label="Age" value={`${assessment.age} years`} />
+                <InfoField label="Triggers Found" value={`${assessment.triggerCount} of 11`} />
+                <InfoField label="Gender" value={assessment.gender === 'M' ? 'Male' : 'Female'} />
+              </div>
+              {assessment.triggersFound.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                    Trigger Terms Detected
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {assessment.triggersFound.map((term) => (
+                      <span
+                        key={term}
+                        className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200"
+                      >
+                        {term}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -260,3 +325,41 @@ function InfoField({
     </div>
   )
 }
+
+function formatRiskLevel(level: string): string {
+  switch (level) {
+    case 'None':
+      return 'None'
+    case 'Borderline':
+      return 'Borderline'
+    case 'InDanger':
+      return 'In Danger'
+    case 'EarlyOnset':
+      return 'Early Onset'
+    default:
+      return level
+  }
+}
+
+function RiskBadge({ level }: { level: string }) {
+  const styles: Record<string, string> = {
+    None: 'bg-green-100 text-green-800 border-green-200',
+    Borderline: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    InDanger: 'bg-orange-100 text-orange-800 border-orange-200',
+    EarlyOnset: 'bg-red-100 text-red-800 border-red-200',
+  }
+  const emoji: Record<string, string> = {
+    None: '✅',
+    Borderline: '⚠️',
+    InDanger: '🔶',
+    EarlyOnset: '🔴',
+  }
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold border ${styles[level] ?? 'bg-gray-100 text-gray-800 border-gray-200'}`}
+    >
+      {emoji[level] ?? '❓'} {formatRiskLevel(level)}
+    </span>
+  )
+}
+
